@@ -1,6 +1,4 @@
 {
-  "lastUpdated": "2026-10-20T19:34:34.950Z",
-  "count": 50,
   "items": [
     {
       "id": "just_lic_excel_CUE0B85_registrocadastralempr_vencido_1792505792422_1",
@@ -652,5 +650,7 @@
       "observations": "Aguardar Paulo",
       "updatedAt": "20/10/2026 11:16"
     }
-  ]
+  ],
+  "count": 50,
+  "lastUpdated": "2026-10-20T19:34:34.950Z"
 }

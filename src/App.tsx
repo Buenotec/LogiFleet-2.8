@@ -94,6 +94,12 @@ import { ComoUsarTab } from "./components/ComoUsarTab";
 import { OperationDistributionChart } from "./components/OperationDistributionChart";
 import { PortalTooltip } from "./components/PortalTooltip";
 import { NeonLaserBeam } from "./components/NeonLaserBeam";
+import { 
+  defaultLicenseJustifications, 
+  defaultDocJustifications, 
+  defaultLicenseHistory, 
+  defaultDocHistory 
+} from "./data/initialJustifications";
 
 interface MultiSelectProps {
   label: string;
@@ -1240,19 +1246,23 @@ export default function App() {
   const [justifications, setJustifications] = useState<LicenseJustification[]>(() => {
     try {
       const saved = localStorage.getItem("uni_license_justifications");
-      return saved ? JSON.parse(saved) : [];
-    } catch {
-      return [];
-    }
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch (_) {}
+    return defaultLicenseJustifications;
   });
   const [justificationsLoaded, setJustificationsLoaded] = useState(false);
   const [docJustifications, setDocJustifications] = useState<LicenseJustification[]>(() => {
     try {
       const saved = localStorage.getItem("uni_doc_justifications");
-      return saved ? JSON.parse(saved) : [];
-    } catch {
-      return [];
-    }
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch (_) {}
+    return defaultDocJustifications;
   });
   const [docJustificationsLoaded, setDocJustificationsLoaded] = useState(false);
 
@@ -1260,18 +1270,22 @@ export default function App() {
   const [licenseHistory, setLicenseHistory] = useState<JustificationHistoryItem[]>(() => {
     try {
       const saved = localStorage.getItem("uni_license_justifications_history");
-      return saved ? JSON.parse(saved) : [];
-    } catch {
-      return [];
-    }
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch (_) {}
+    return defaultLicenseHistory;
   });
   const [docHistory, setDocHistory] = useState<JustificationHistoryItem[]>(() => {
     try {
       const saved = localStorage.getItem("uni_doc_justifications_history");
-      return saved ? JSON.parse(saved) : [];
-    } catch {
-      return [];
-    }
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch (_) {}
+    return defaultDocHistory;
   });
 
   const justificationsRef = useRef(justifications);
@@ -1483,6 +1497,8 @@ export default function App() {
   });
 
   const [settingsLoaded, setSettingsLoaded] = useState(false);
+  const isRemoteSettingsUpdateRef = useRef(false);
+  const lastSavedSettingsRef = useRef<string>(JSON.stringify(settings));
 
   useEffect(() => {
     const settingsDocRef = doc(db, "settings", "global");
@@ -1491,9 +1507,12 @@ export default function App() {
         const remoteData = snapshot.data();
         setSettings((prev: any) => {
           const prevStr = JSON.stringify(prev);
-          const nextStr = JSON.stringify({ ...prev, ...remoteData });
+          const nextCombined = { ...prev, ...remoteData };
+          const nextStr = JSON.stringify(nextCombined);
           if (prevStr !== nextStr) {
-            return { ...prev, ...remoteData };
+            isRemoteSettingsUpdateRef.current = true;
+            lastSavedSettingsRef.current = nextStr;
+            return nextCombined;
           }
           return prev;
         });
@@ -1514,14 +1533,25 @@ export default function App() {
 
     localStorage.setItem('logifleet_settings', JSON.stringify(settings));
 
+    if (isRemoteSettingsUpdateRef.current) {
+      isRemoteSettingsUpdateRef.current = false;
+      return;
+    }
+
+    const currentStr = JSON.stringify(settings);
+    if (currentStr === lastSavedSettingsRef.current) {
+      return;
+    }
+
     const timeoutId = setTimeout(async () => {
       try {
+        lastSavedSettingsRef.current = currentStr;
         const settingsDocRef = doc(db, "settings", "global");
         await setDoc(settingsDocRef, settings);
       } catch (e) {
         handleFirestoreError(e, OperationType.WRITE, "settings/global");
       }
-    }, 1000);
+    }, 2000);
 
     return () => clearTimeout(timeoutId);
   }, [settings, settingsLoaded]);

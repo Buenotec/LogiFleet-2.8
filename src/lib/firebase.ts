@@ -20,17 +20,10 @@ const app = initializeApp(firebaseConfig);
 export const db = (firebaseConfig as any).firestoreDatabaseId ? getFirestore(app, (firebaseConfig as any).firestoreDatabaseId) : getFirestore(app);
 export const auth = getAuth(app);
 
-// Disable Firestore network stream immediately so no background retry storms or resource-exhausted writes occur
-try {
-  disableNetwork(db).catch(() => {});
-} catch (_) {}
-
 const QUOTA_STORAGE_KEY = 'logifleet_firestore_quota_status_v1';
 
-// Cota diária gratuita do projeto está temporariamente esgotada no Google Cloud (20.000 writes/dia).
-// A aplicação opera de modo 100% autônomo e seguro via persistência em disco no servidor Express e localStorage.
-let firestoreQuotaExceeded = true;
-let networkDisabled = true;
+let firestoreQuotaExceeded = false;
+let networkDisabled = false;
 
 export function isFirestoreQuotaExceeded(): boolean {
   return firestoreQuotaExceeded;

@@ -272,6 +272,16 @@ function extractCleanDocTypeAndValidity(rawKey: string, initialValidity: string)
   const JUSTIFICATIONS_FILE = path.join(process.cwd(), "justifications_db.json");
   const DOC_JUSTIFICATIONS_FILE = path.join(process.cwd(), "doc_justifications_db.json");
 
+  function safeSaveToSrcData(filename: string, content: string) {
+    try {
+      const dataDir = path.join(process.cwd(), "src", "data");
+      if (!fs.existsSync(dataDir)) {
+        fs.mkdirSync(dataDir, { recursive: true });
+      }
+      fs.writeFileSync(path.join(dataDir, filename), content, "utf-8");
+    } catch (_) {}
+  }
+
   // Load Firebase Config for Firestore REST persistence across any machine/user
   let firebaseConfig: any = null;
   try {
@@ -431,9 +441,10 @@ function extractCleanDocTypeAndValidity(rawKey: string, initialValidity: string)
       // 1. Cloud persistence to Firestore (stored permanently in Firebase)
       await setFirestoreDoc("license_justifications", "all", payload);
 
-      // 2. Local disk fallback
+      // 2. Local disk fallback and static seed sync
       try {
         fs.writeFileSync(JUSTIFICATIONS_FILE, JSON.stringify(payload, null, 2), "utf-8");
+        safeSaveToSrcData("default_license_justifications.json", JSON.stringify(payload, null, 2));
       } catch (_) {}
 
       // 3. Auto-save snapshot if items > 0
@@ -690,9 +701,10 @@ function extractCleanDocTypeAndValidity(rawKey: string, initialValidity: string)
       // 1. Cloud persistence to Firestore
       await setFirestoreDoc("doc_justifications", "all", payload);
 
-      // 2. Local disk fallback
+      // 2. Local disk fallback and static seed sync
       try {
         fs.writeFileSync(DOC_JUSTIFICATIONS_FILE, JSON.stringify(payload, null, 2), "utf-8");
+        safeSaveToSrcData("default_doc_justifications.json", JSON.stringify(payload, null, 2));
       } catch (_) {}
 
       // 3. Auto-save snapshot if items > 0
@@ -937,6 +949,7 @@ function extractCleanDocTypeAndValidity(rawKey: string, initialValidity: string)
       await setFirestoreDoc("license_justifications_history", "all", payload);
       try {
         fs.writeFileSync(JUSTIFICATIONS_HISTORY_FILE, JSON.stringify(payload, null, 2), "utf-8");
+        safeSaveToSrcData("default_license_history.json", JSON.stringify(payload, null, 2));
       } catch (_) {}
       return res.json({ success: true, count: items.length, lastUpdated: payload.lastUpdated });
     } catch (err) {
@@ -982,6 +995,7 @@ function extractCleanDocTypeAndValidity(rawKey: string, initialValidity: string)
       await setFirestoreDoc("doc_justifications_history", "all", payload);
       try {
         fs.writeFileSync(DOC_JUSTIFICATIONS_HISTORY_FILE, JSON.stringify(payload, null, 2), "utf-8");
+        safeSaveToSrcData("default_doc_history.json", JSON.stringify(payload, null, 2));
       } catch (_) {}
       return res.json({ success: true, count: items.length, lastUpdated: payload.lastUpdated });
     } catch (err) {
